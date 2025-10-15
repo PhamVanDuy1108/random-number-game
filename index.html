@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quay Số May Mắn 1-10</title>
+    <title>Quay Số May Mắn 1-10 - Multiplayer</title>
     <style>
         * {
             margin: 0;
@@ -85,6 +85,52 @@
         .spin-button:disabled {
             background: #ccc;
             cursor: not-allowed;
+        }
+
+        .name-input-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .name-input-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .name-input:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .name-input::placeholder {
+            color: #999;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .status-badge.offline {
+            background: #dc3545;
         }
 
         .reset-button {
@@ -186,6 +232,13 @@
             font-size: 1.5em;
             font-weight: bold;
             color: #667eea;
+            margin-right: 10px;
+        }
+
+        .history-name {
+            font-size: 1em;
+            color: #333;
+            font-weight: 600;
         }
 
         .history-time {
@@ -229,8 +282,19 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎰 Quay Số May Mắn</h1>
+        <h1>🎰 Quay Số May Mắn <span class="status-badge" id="statusBadge">🔴 Offline</span></h1>
         
+        <div class="name-input-section">
+            <h3>👤 Nhập tên của bạn:</h3>
+            <input 
+                type="text" 
+                id="playerName" 
+                class="name-input" 
+                placeholder="Ví dụ: Nguyễn Văn A"
+                maxlength="30"
+            >
+        </div>
+
         <div class="number-display" id="numberDisplay">?</div>
         
         <button class="spin-button" id="spinButton" onclick="spinNumber()">
@@ -238,7 +302,7 @@
         </button>
 
         <button class="reset-button" onclick="resetGame()">
-            🔄 BẮT ĐẦU LẠI
+            🔄 BẮT ĐẦU LẠI (Reset tất cả)
         </button>
 
         <div id="gameOverMessage" class="game-over" style="display: none;">
@@ -251,31 +315,170 @@
         </div>
 
         <div class="info-section">
-            <h3>🏆 Lịch sử quay số</h3>
+            <h3>🏆 Lịch sử quay số (Real-time)</h3>
             <ul class="history-list" id="historyList">
                 <li style="text-align: center; color: #6c757d; padding: 20px;">
-                    Chưa có lịch sử
+                    Đang tải dữ liệu...
                 </li>
             </ul>
         </div>
     </div>
 
-    <script>
-        let availableNumbers = [];
-        let usedNumbers = [];
-        let history = [];
-        let isSpinning = false;
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, push, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
-        // Khởi tạo game
-        function initGame() {
-            availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            usedNumbers = [];
-            history = [];
-            document.getElementById('numberDisplay').textContent = '?';
-            document.getElementById('gameOverMessage').style.display = 'none';
-            document.getElementById('spinButton').disabled = false;
+        // Firebase Configuration (Free tier)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqXxXxXxXxXxXxXxXxXxXxXxXxXxX",
+            authDomain: "random-game-demo.firebaseapp.com",
+            databaseURL: "https://random-game-demo-default-rtdb.firebaseio.com",
+            projectId: "random-game-demo",
+            storageBucket: "random-game-demo.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdefghijklmnop"
+        };
+
+        // Initialize Firebase
+        let app, database;
+        let isFirebaseReady = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            isFirebaseReady = true;
+            updateStatus(true);
+            console.log('✅ Firebase connected');
+        } catch (error) {
+            console.error('❌ Firebase error:', error);
+            updateStatus(false);
+            alert('⚠️ Không thể kết nối Firebase. Vui lòng cấu hình Firebase hoặc sử dụng chế độ offline.');
+        }
+
+        // Global variables
+        window.availableNumbers = [];
+        window.usedNumbers = [];
+        window.history = [];
+        window.isSpinning = false;
+        window.database = database;
+        window.isFirebaseReady = isFirebaseReady;
+
+        // Update connection status
+        function updateStatus(isOnline) {
+            const badge = document.getElementById('statusBadge');
+            if (isOnline) {
+                badge.textContent = '🟢 Online';
+                badge.classList.remove('offline');
+            } else {
+                badge.textContent = '🔴 Offline';
+                badge.classList.add('offline');
+            }
+        }
+        window.updateStatus = updateStatus;
+
+        // Listen to Firebase data changes
+        if (isFirebaseReady) {
+            const historyRef = ref(database, 'gameHistory');
+            onValue(historyRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.history = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+                    window.usedNumbers = window.history.map(item => item.number);
+                    window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
+                } else {
+                    window.history = [];
+                    window.usedNumbers = [];
+                    window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                }
+                updateNumbersGrid();
+                updateHistory();
+                
+                // Check game over
+                if (window.availableNumbers.length === 0) {
+                    document.getElementById('gameOverMessage').style.display = 'block';
+                    document.getElementById('spinButton').disabled = true;
+                } else {
+                    document.getElementById('gameOverMessage').style.display = 'none';
+                    if (!window.isSpinning) {
+                        document.getElementById('spinButton').disabled = false;
+                    }
+                }
+            });
+        } else {
+            // Offline mode - use localStorage
+            initGameOffline();
+        }
+
+        // Initialize offline mode
+        function initGameOffline() {
+            const savedData = localStorage.getItem('gameHistory');
+            if (savedData) {
+                window.history = JSON.parse(savedData);
+                window.usedNumbers = window.history.map(item => item.number);
+                window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
+            } else {
+                window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                window.usedNumbers = [];
+                window.history = [];
+            }
             updateNumbersGrid();
             updateHistory();
+        }
+        window.initGameOffline = initGameOffline;
+
+        // Save to Firebase
+        window.saveToFirebase = async function(number, playerName) {
+            if (!isFirebaseReady) {
+                // Offline mode - save to localStorage
+                const newEntry = {
+                    number: number,
+                    playerName: playerName,
+                    timestamp: Date.now(),
+                    time: new Date().toLocaleString('vi-VN')
+                };
+                window.history.unshift(newEntry);
+                localStorage.setItem('gameHistory', JSON.stringify(window.history));
+                return;
+            }
+
+            const historyRef = ref(database, 'gameHistory');
+            const newHistoryRef = push(historyRef);
+            await set(newHistoryRef, {
+                number: number,
+                playerName: playerName,
+                timestamp: Date.now(),
+                time: new Date().toLocaleString('vi-VN')
+            });
+        };
+
+        // Reset game
+        window.resetGameFirebase = async function() {
+            if (!confirm('⚠️ Bạn có chắc muốn XÓA TẤT CẢ dữ liệu và bắt đầu lại? Hành động này sẽ ảnh hưởng đến TẤT CẢ người chơi!')) {
+                return;
+            }
+
+            if (isFirebaseReady) {
+                const historyRef = ref(database, 'gameHistory');
+                await remove(historyRef);
+            } else {
+                localStorage.removeItem('gameHistory');
+                initGameOffline();
+            }
+            
+            document.getElementById('numberDisplay').textContent = '?';
+            alert('✅ Đã reset thành công!');
+        };
+    </script>
+
+    <script>
+        // Khởi tạo game
+        function initGame() {
+            if (!window.isFirebaseReady) {
+                window.initGameOffline();
+            }
+            document.getElementById('numberDisplay').textContent = '?';
         }
 
         // Cập nhật lưới các số
@@ -288,7 +491,7 @@
                 box.className = 'number-box';
                 box.textContent = i;
                 
-                if (usedNumbers.includes(i)) {
+                if (window.usedNumbers.includes(i)) {
                     box.classList.add('used');
                 }
                 
@@ -300,7 +503,7 @@
         function updateHistory() {
             const historyList = document.getElementById('historyList');
             
-            if (history.length === 0) {
+            if (window.history.length === 0) {
                 historyList.innerHTML = `
                     <li style="text-align: center; color: #6c757d; padding: 20px;">
                         Chưa có lịch sử
@@ -309,23 +512,34 @@
                 return;
             }
 
-            historyList.innerHTML = history.map((item, index) => `
+            historyList.innerHTML = window.history.map((item, index) => `
                 <li class="history-item">
                     <span>
                         <span class="history-number">#${item.number}</span>
+                        <span class="history-name">👤 ${item.playerName || 'Ẩn danh'}</span>
                     </span>
                     <span class="history-time">
-                        Lượt ${history.length - index}
+                        ${item.time || 'N/A'}
                     </span>
                 </li>
             `).join('');
         }
 
         // Quay số
-        function spinNumber() {
-            if (isSpinning || availableNumbers.length === 0) return;
+        async function spinNumber() {
+            // Kiểm tra tên người chơi
+            const playerNameInput = document.getElementById('playerName');
+            const playerName = playerNameInput.value.trim();
+            
+            if (!playerName) {
+                alert('⚠️ Vui lòng nhập tên của bạn trước khi quay số!');
+                playerNameInput.focus();
+                return;
+            }
 
-            isSpinning = true;
+            if (window.isSpinning || window.availableNumbers.length === 0) return;
+
+            window.isSpinning = true;
             const display = document.getElementById('numberDisplay');
             const button = document.getElementById('spinButton');
             
@@ -334,7 +548,7 @@
 
             // Hiệu ứng quay số
             let counter = 0;
-            const spinInterval = setInterval(() => {
+            const spinInterval = setInterval(async () => {
                 const randomIndex = Math.floor(Math.random() * 10) + 1;
                 display.textContent = randomIndex;
                 counter++;
@@ -343,44 +557,27 @@
                     clearInterval(spinInterval);
                     
                     // Chọn số ngẫu nhiên từ các số còn lại
-                    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-                    const selectedNumber = availableNumbers[randomIndex];
+                    const randomIndex = Math.floor(Math.random() * window.availableNumbers.length);
+                    const selectedNumber = window.availableNumbers[randomIndex];
                     
                     // Hiển thị số trúng
                     display.textContent = selectedNumber;
                     display.classList.remove('spinning');
                     
-                    // Cập nhật danh sách
-                    usedNumbers.push(selectedNumber);
-                    availableNumbers = availableNumbers.filter(n => n !== selectedNumber);
-                    
-                    // Thêm vào lịch sử
-                    history.unshift({
-                        number: selectedNumber,
-                        time: new Date().toLocaleTimeString('vi-VN')
-                    });
+                    // Lưu vào Firebase/LocalStorage
+                    await window.saveToFirebase(selectedNumber, playerName);
 
-                    // Cập nhật UI
-                    updateNumbersGrid();
-                    updateHistory();
+                    // Clear input
+                    playerNameInput.value = '';
 
-                    // Kiểm tra kết thúc game
-                    if (availableNumbers.length === 0) {
-                        document.getElementById('gameOverMessage').style.display = 'block';
-                    } else {
-                        button.disabled = false;
-                    }
-
-                    isSpinning = false;
+                    window.isSpinning = false;
                 }
             }, 100);
         }
 
         // Reset game
-        function resetGame() {
-            if (confirm('Bạn có chắc muốn bắt đầu lại? Tất cả dữ liệu sẽ bị xóa.')) {
-                initGame();
-            }
+        async function resetGame() {
+            await window.resetGameFirebase();
         }
 
         // Khởi tạo khi tải trang
