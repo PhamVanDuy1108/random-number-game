@@ -461,6 +461,20 @@
 
         // Reset game
         window.resetGameFirebase = async function() {
+            // Yêu cầu mật khẩu
+            const password = prompt('🔒 Nhập mật khẩu để reset (chỉ Admin):');
+            
+            if (password === null) {
+                // User clicked Cancel
+                return;
+            }
+            
+            if (password !== 'August') {
+                alert('❌ Mật khẩu sai! Không thể reset.');
+                return;
+            }
+            
+            // Confirm reset
             if (!confirm('⚠️ Bạn có chắc muốn XÓA TẤT CẢ dữ liệu và bắt đầu lại? Hành động này sẽ ảnh hưởng đến TẤT CẢ người chơi!')) {
                 return;
             }
