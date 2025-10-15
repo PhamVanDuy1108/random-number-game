@@ -380,6 +380,12 @@
 
         // Listen to Firebase data changes
         if (isFirebaseReady) {
+            // Expose Firebase functions to global scope
+            window.firebaseRef = ref;
+            window.firebasePush = push;
+            window.firebaseSet = set;
+            window.firebaseRemove = remove;
+            
             const historyRef = ref(database, 'gameHistory');
             onValue(historyRef, (snapshot) => {
                 const data = snapshot.val();
@@ -430,7 +436,7 @@
 
         // Save to Firebase
         window.saveToFirebase = async function(number, playerName) {
-            if (!isFirebaseReady) {
+            if (!window.isFirebaseReady) {
                 // Offline mode - save to localStorage
                 const newEntry = {
                     number: number,
@@ -443,9 +449,9 @@
                 return;
             }
 
-            const historyRef = ref(database, 'gameHistory');
-            const newHistoryRef = push(historyRef);
-            await set(newHistoryRef, {
+            const historyRef = window.firebaseRef(window.database, 'gameHistory');
+            const newHistoryRef = window.firebasePush(historyRef);
+            await window.firebaseSet(newHistoryRef, {
                 number: number,
                 playerName: playerName,
                 timestamp: Date.now(),
@@ -459,17 +465,23 @@
                 return;
             }
 
-            if (isFirebaseReady) {
-                const historyRef = ref(database, 'gameHistory');
-                await remove(historyRef);
+            if (window.isFirebaseReady) {
+                const historyRef = window.firebaseRef(window.database, 'gameHistory');
+                await window.firebaseRemove(historyRef);
             } else {
                 localStorage.removeItem('gameHistory');
-                initGameOffline();
+                window.initGameOffline();
             }
             
             document.getElementById('numberDisplay').textContent = '?';
             alert('✅ Đã reset thành công!');
         };
+        
+        // Expose Firebase functions to global scope
+        window.firebaseRef = ref;
+        window.firebasePush = push;
+        window.firebaseSet = set;
+        window.firebaseRemove = remove;
     </script>
 
     <script>
