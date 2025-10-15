@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quay Số May Mắn 1-10</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .number-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 5em;
+            font-weight: bold;
+            text-align: center;
+            padding: 50px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .number-display.spinning {
+            animation: pulse 0.1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .spin-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .spin-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .reset-button:hover {
+            background: #ee5a52;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .number-box {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .number-box.used {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            position: relative;
+        }
+
+        .number-box.used::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .winner-info {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .history-list {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .history-time {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .game-over {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .number-display {
+                font-size: 3em;
+                padding: 30px;
+            }
+
+            .numbers-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
+            }
+
+            .number-box {
+                padding: 10px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 Quay Số May Mắn</h1>
+        
+        <div class="number-display" id="numberDisplay">?</div>
+        
+        <button class="spin-button" id="spinButton" onclick="spinNumber()">
+            🎲 QUAY SỐ
+        </button>
+
+        <button class="reset-button" onclick="resetGame()">
+            🔄 BẮT ĐẦU LẠI
+        </button>
+
+        <div id="gameOverMessage" class="game-over" style="display: none;">
+            🎉 Tất cả các số đã được quay! Nhấn "Bắt đầu lại" để chơi tiếp.
+        </div>
+
+        <div class="info-section">
+            <h3>📊 Các số còn lại</h3>
+            <div class="numbers-grid" id="numbersGrid"></div>
+        </div>
+
+        <div class="info-section">
+            <h3>🏆 Lịch sử quay số</h3>
+            <ul class="history-list" id="historyList">
+                <li style="text-align: center; color: #6c757d; padding: 20px;">
+                    Chưa có lịch sử
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let availableNumbers = [];
+        let usedNumbers = [];
+        let history = [];
+        let isSpinning = false;
+
+        // Khởi tạo game
+        function initGame() {
+            availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            usedNumbers = [];
+            history = [];
+            document.getElementById('numberDisplay').textContent = '?';
+            document.getElementById('gameOverMessage').style.display = 'none';
+            document.getElementById('spinButton').disabled = false;
+            updateNumbersGrid();
+            updateHistory();
+        }
+
+        // Cập nhật lưới các số
+        function updateNumbersGrid() {
+            const grid = document.getElementById('numbersGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 10; i++) {
+                const box = document.createElement('div');
+                box.className = 'number-box';
+                box.textContent = i;
+                
+                if (usedNumbers.includes(i)) {
+                    box.classList.add('used');
+                }
+                
+                grid.appendChild(box);
+            }
+        }
+
+        // Cập nhật lịch sử
+        function updateHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <li style="text-align: center; color: #6c757d; padding: 20px;">
+                        Chưa có lịch sử
+                    </li>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = history.map((item, index) => `
+                <li class="history-item">
+                    <span>
+                        <span class="history-number">#${item.number}</span>
+                    </span>
+                    <span class="history-time">
+                        Lượt ${history.length - index}
+                    </span>
+                </li>
+            `).join('');
+        }
+
+        // Quay số
+        function spinNumber() {
+            if (isSpinning || availableNumbers.length === 0) return;
+
+            isSpinning = true;
+            const display = document.getElementById('numberDisplay');
+            const button = document.getElementById('spinButton');
+            
+            button.disabled = true;
+            display.classList.add('spinning');
+
+            // Hiệu ứng quay số
+            let counter = 0;
+            const spinInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * 10) + 1;
+                display.textContent = randomIndex;
+                counter++;
+
+                if (counter >= 20) {
+                    clearInterval(spinInterval);
+                    
+                    // Chọn số ngẫu nhiên từ các số còn lại
+                    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                    const selectedNumber = availableNumbers[randomIndex];
+                    
+                    // Hiển thị số trúng
+                    display.textContent = selectedNumber;
+                    display.classList.remove('spinning');
+                    
+                    // Cập nhật danh sách
+                    usedNumbers.push(selectedNumber);
+                    availableNumbers = availableNumbers.filter(n => n !== selectedNumber);
+                    
+                    // Thêm vào lịch sử
+                    history.unshift({
+                        number: selectedNumber,
+                        time: new Date().toLocaleTimeString('vi-VN')
+                    });
+
+                    // Cập nhật UI
+                    updateNumbersGrid();
+                    updateHistory();
+
+                    // Kiểm tra kết thúc game
+                    if (availableNumbers.length === 0) {
+                        document.getElementById('gameOverMessage').style.display = 'block';
+                    } else {
+                        button.disabled = false;
+                    }
+
+                    isSpinning = false;
+                }
+            }, 100);
+        }
+
+        // Reset game
+        function resetGame() {
+            if (confirm('Bạn có chắc muốn bắt đầu lại? Tất cả dữ liệu sẽ bị xóa.')) {
+                initGame();
+            }
+        }
+
+        // Khởi tạo khi tải trang
+        window.onload = initGame;
+    </script>
+</body>
+</html>
