@@ -360,7 +360,7 @@
         // Global variables
         window.availableNumbers = [];
         window.usedNumbers = [];
-        window.history = [];
+        window.gameHistory = [];
         window.isSpinning = false;
         window.database = database;
         window.isFirebaseReady = isFirebaseReady;
@@ -390,11 +390,11 @@
             onValue(historyRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    window.history = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
-                    window.usedNumbers = window.history.map(item => item.number);
+                    window.gameHistory = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+                    window.usedNumbers = window.gameHistory.map(item => item.number);
                     window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
                 } else {
-                    window.history = [];
+                    window.gameHistory = [];
                     window.usedNumbers = [];
                     window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                 }
@@ -421,13 +421,13 @@
         function initGameOffline() {
             const savedData = localStorage.getItem('gameHistory');
             if (savedData) {
-                window.history = JSON.parse(savedData);
-                window.usedNumbers = window.history.map(item => item.number);
+                window.gameHistory = JSON.parse(savedData);
+                window.usedNumbers = window.gameHistory.map(item => item.number);
                 window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
             } else {
                 window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                 window.usedNumbers = [];
-                window.history = [];
+                window.gameHistory = [];
             }
             updateNumbersGrid();
             updateHistory();
@@ -444,8 +444,8 @@
                     timestamp: Date.now(),
                     time: new Date().toLocaleString('vi-VN')
                 };
-                window.history.unshift(newEntry);
-                localStorage.setItem('gameHistory', JSON.stringify(window.history));
+                window.gameHistory.unshift(newEntry);
+                localStorage.setItem('gameHistory', JSON.stringify(window.gameHistory));
                 return;
             }
 
@@ -515,7 +515,7 @@
         function updateHistory() {
             const historyList = document.getElementById('historyList');
             
-            if (window.history.length === 0) {
+            if (window.gameHistory.length === 0) {
                 historyList.innerHTML = `
                     <li style="text-align: center; color: #6c757d; padding: 20px;">
                         Chưa có lịch sử
@@ -524,7 +524,7 @@
                 return;
             }
 
-            historyList.innerHTML = window.history.map((item, index) => `
+            historyList.innerHTML = window.gameHistory.map((item, index) => `
                 <li class="history-item">
                     <span>
                         <span class="history-number">#${item.number}</span>
