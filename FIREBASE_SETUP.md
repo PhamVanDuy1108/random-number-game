@@ -50,6 +50,10 @@ const firebaseConfig = {
     "password": {
       ".read": true,
       ".write": false
+    },
+    "maxNumber": {
+      ".read": true,
+      ".write": true
     }
   }
 }
@@ -60,17 +64,33 @@ const firebaseConfig = {
 ⚠️ **LƯU Ý**: 
 - `gameHistory`: Cho phép mọi người đọc/ghi để chơi game
 - `password`: Chỉ cho phép đọc, không cho phép ghi từ client (bảo vệ mật khẩu admin)
+- `maxNumber`: Cho phép đọc/ghi (Admin sẽ xác thực bằng mật khẩu trong code trước khi ghi)
+- `password`: Chỉ cho phép đọc, không cho phép ghi từ client (bảo vệ mật khẩu admin)
+- `maxNumber`: Chỉ cho phép đọc, không cho phép ghi từ client (bảo vệ cấu hình số lượng)
 
-## Bước 4.5: Thêm Mật Khẩu Admin
+## Bước 4.5: Thêm Cấu hình Game trong Firebase
 
 1. Vào tab **Data** trong Realtime Database
 2. Click vào **root** (dấu + đầu tiên)
-3. Thêm key mới:
+3. Thêm các key sau:
+
+### 3.1. Thêm Mật Khẩu Admin:
    - **Name**: `password`
    - **Value**: `11August` (hoặc mật khẩu bạn muốn)
-4. Click **Add**
+   - Click **Add**
 
-🔒 **Mật khẩu này sẽ được dùng để reset game và chỉ Admin biết!**
+### 3.2. Thêm Số Lượng Số:
+   - **Name**: `maxNumber`
+   - **Value**: `10` (hoặc 30, 50, 100 tùy bạn muốn)
+   - Click **Add**
+
+🎲 **Lưu ý về maxNumber:**
+- Giá trị `10` → Game sẽ quay số từ 1-10
+- Giá trị `30` → Game sẽ quay số từ 1-30
+- Giá trị `100` → Game sẽ quay số từ 1-100
+- Bạn có thể thay đổi giá trị này bất cứ lúc nào trên Firebase, game sẽ tự động cập nhật!
+
+🔒 **Mật khẩu sẽ được dùng để reset game và chỉ Admin biết!**
 
 ## Bước 5: Cập nhật Code
 

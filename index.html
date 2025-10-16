@@ -168,8 +168,10 @@
 
         .numbers-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
             gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .number-box {
@@ -269,7 +271,7 @@
             }
 
             .numbers-grid {
-                grid-template-columns: repeat(5, 1fr);
+                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
                 gap: 5px;
             }
 
@@ -283,20 +285,20 @@
 <body>
     <div class="container">
         <h1>🎰 Quay Số May Mắn <span class="status-badge" id="statusBadge">🔴 Offline</span></h1>
-        
+
         <div class="name-input-section">
             <h3>👤 Nhập tên của bạn:</h3>
-            <input 
-                type="text" 
-                id="playerName" 
-                class="name-input" 
+            <input
+                type="text"
+                id="playerName"
+                class="name-input"
                 placeholder="Ví dụ: Nguyễn Văn A"
                 maxlength="30"
             >
         </div>
 
         <div class="number-display" id="numberDisplay">?</div>
-        
+
         <button class="spin-button" id="spinButton" onclick="spinNumber()">
             🎲 QUAY SỐ
         </button>
@@ -304,6 +306,32 @@
         <button class="reset-button" onclick="resetGame()">
             🔄 BẮT ĐẦU LẠI (Reset tất cả)
         </button>
+
+        <div class="info-section" style="background: #fff3cd; border: 2px solid #ffc107;">
+            <h3 style="color: #856404;">⚙️ Cấu hình số lượng (Admin)</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input 
+                    type="number" 
+                    id="maxNumberInput" 
+                    class="name-input" 
+                    placeholder="Nhập số lượng (VD: 30)"
+                    min="1"
+                    max="1000"
+                    style="flex: 1;"
+                >
+                <button 
+                    onclick="updateMaxNumber()" 
+                    style="padding: 15px 30px; font-size: 1.1em; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;"
+                    onmouseover="this.style.background='#218838'" 
+                    onmouseout="this.style.background='#28a745'"
+                >
+                    💾 Lưu
+                </button>
+            </div>
+            <div id="maxNumberStatus" style="margin-top: 10px; font-size: 0.95em; color: #666;">
+                Hiện tại: <strong id="currentMaxNumber">10</strong> số (từ 1 đến <strong id="currentMaxNumber2">10</strong>)
+            </div>
+        </div>
 
         <div id="gameOverMessage" class="game-over" style="display: none;">
             🎉 Tất cả các số đã được quay! Nhấn "Bắt đầu lại" để chơi tiếp.
@@ -365,6 +393,7 @@
         window.database = database;
         window.isFirebaseReady = isFirebaseReady;
         window.adminPassword = null; // Sẽ được tải từ Firebase
+        window.maxNumber = 10; // Mặc định là 10, sẽ được tải từ Firebase
 
         // Update connection status
         function updateStatus(isOnline) {
@@ -386,7 +415,7 @@
             window.firebasePush = push;
             window.firebaseSet = set;
             window.firebaseRemove = remove;
-            
+
             // Load admin password from Firebase
             const passwordRef = ref(database, 'password');
             onValue(passwordRef, (snapshot) => {
@@ -398,22 +427,42 @@
                     console.warn('⚠️ No password found in Firebase. Please set "password" key in database.');
                 }
             });
-            
+
+            // Load maxNumber from Firebase
+            const maxNumberRef = ref(database, 'maxNumber');
+            onValue(maxNumberRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && typeof data === 'number' && data > 0) {
+                    window.maxNumber = data;
+                    console.log(`🎲 Max number set to: ${window.maxNumber}`);
+                    // Cập nhật lại availableNumbers khi maxNumber thay đổi
+                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
+                        .filter(n => !window.usedNumbers.includes(n));
+                    updateNumbersGrid();
+                    updateMaxNumberDisplay(); // Cập nhật hiển thị
+                } else {
+                    window.maxNumber = 10; // Default
+                    console.log('ℹ️ Using default maxNumber: 10');
+                    updateMaxNumberDisplay(); // Cập nhật hiển thị
+                }
+            });
+
             const historyRef = ref(database, 'gameHistory');
             onValue(historyRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     window.gameHistory = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
                     window.usedNumbers = window.gameHistory.map(item => item.number);
-                    window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
+                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
+                        .filter(n => !window.usedNumbers.includes(n));
                 } else {
                     window.gameHistory = [];
                     window.usedNumbers = [];
-                    window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1);
                 }
                 updateNumbersGrid();
                 updateHistory();
-                
+
                 // Check game over
                 if (window.availableNumbers.length === 0) {
                     document.getElementById('gameOverMessage').style.display = 'block';
@@ -433,12 +482,19 @@
         // Initialize offline mode
         function initGameOffline() {
             const savedData = localStorage.getItem('gameHistory');
+            const savedMaxNumber = localStorage.getItem('maxNumber');
+            
+            if (savedMaxNumber) {
+                window.maxNumber = parseInt(savedMaxNumber);
+            }
+            
             if (savedData) {
                 window.gameHistory = JSON.parse(savedData);
                 window.usedNumbers = window.gameHistory.map(item => item.number);
-                window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => !window.usedNumbers.includes(n));
+                window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
+                    .filter(n => !window.usedNumbers.includes(n));
             } else {
-                window.availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1);
                 window.usedNumbers = [];
                 window.gameHistory = [];
             }
@@ -479,23 +535,23 @@
                 alert('⚠️ Đang tải cấu hình từ Firebase, vui lòng thử lại sau giây lát...');
                 return;
             }
-            
+
             // Yêu cầu mật khẩu
             const password = prompt('🔒 Nhập mật khẩu để reset (chỉ Admin):');
-            
+
             if (password === null) {
                 // User clicked Cancel
                 return;
             }
-            
+
             // Kiểm tra mật khẩu từ Firebase (hoặc fallback cho offline mode)
             const correctPassword = window.isFirebaseReady ? window.adminPassword : 'August';
-            
+
             if (password !== correctPassword) {
                 alert('❌ Mật khẩu sai! Không thể reset.');
                 return;
             }
-            
+
             // Confirm reset
             if (!confirm('⚠️ Bạn có chắc muốn XÓA TẤT CẢ dữ liệu và bắt đầu lại? Hành động này sẽ ảnh hưởng đến TẤT CẢ người chơi!')) {
                 return;
@@ -508,11 +564,11 @@
                 localStorage.removeItem('gameHistory');
                 window.initGameOffline();
             }
-            
+
             document.getElementById('numberDisplay').textContent = '?';
             alert('✅ Đã reset thành công!');
         };
-        
+
         // Expose Firebase functions to global scope
         window.firebaseRef = ref;
         window.firebasePush = push;
@@ -527,22 +583,99 @@
                 window.initGameOffline();
             }
             document.getElementById('numberDisplay').textContent = '?';
+            updateMaxNumberDisplay();
+        }
+
+        // Cập nhật hiển thị maxNumber
+        function updateMaxNumberDisplay() {
+            const maxNum = window.maxNumber || 10;
+            document.getElementById('currentMaxNumber').textContent = maxNum;
+            document.getElementById('currentMaxNumber2').textContent = maxNum;
+            document.getElementById('maxNumberInput').placeholder = `Nhập số lượng (Hiện tại: ${maxNum})`;
+        }
+
+        // Cập nhật maxNumber (Admin)
+        async function updateMaxNumber() {
+            try {
+                // Kiểm tra Firebase ready
+                if (!window.isFirebaseReady) {
+                    alert('⚠️ Chế độ offline không hỗ trợ thay đổi cấu hình. Vui lòng kết nối Firebase.');
+                    return;
+                }
+
+                // Kiểm tra password loaded
+                if (!window.adminPassword) {
+                    alert('⚠️ Đang tải cấu hình từ Firebase, vui lòng thử lại sau giây lát...');
+                    console.error('Admin password not loaded yet');
+                    return;
+                }
+
+                // Lấy giá trị input
+                const inputValue = document.getElementById('maxNumberInput').value;
+                const newMaxNumber = parseInt(inputValue);
+
+                // Validate
+                if (!inputValue || isNaN(newMaxNumber) || newMaxNumber < 1 || newMaxNumber > 1000) {
+                    alert('⚠️ Vui lòng nhập số từ 1 đến 1000!');
+                    return;
+                }
+
+                // Yêu cầu mật khẩu admin
+                const password = prompt('🔒 Nhập mật khẩu Admin để thay đổi cấu hình:');
+                
+                if (password === null) {
+                    return; // User clicked Cancel
+                }
+
+                // Debug log
+                console.log('Entered password:', password);
+                console.log('Expected password:', window.adminPassword);
+                console.log('Password type:', typeof window.adminPassword);
+
+                // Chuyển đổi cả hai về string để so sánh
+                const enteredPassword = String(password).trim();
+                const expectedPassword = String(window.adminPassword).trim();
+
+                if (enteredPassword !== expectedPassword) {
+                    alert('❌ Mật khẩu sai! Không thể thay đổi cấu hình.');
+                    console.error('Password mismatch');
+                    return;
+                }
+
+                // Confirm change
+                if (!confirm(`⚠️ Bạn có chắc muốn thay đổi số lượng từ ${window.maxNumber} thành ${newMaxNumber}?\n\nLưu ý: Nếu đã có lịch sử quay số, các số ngoài phạm vi mới sẽ không hiển thị.`)) {
+                    return;
+                }
+
+                // Lưu vào Firebase
+                const maxNumberRef = window.firebaseRef(window.database, 'maxNumber');
+                await window.firebaseSet(maxNumberRef, newMaxNumber);
+                
+                // Clear input
+                document.getElementById('maxNumberInput').value = '';
+                
+                alert(`✅ Đã cập nhật thành công! Số lượng mới: ${newMaxNumber}`);
+                
+            } catch (error) {
+                console.error('Error updating maxNumber:', error);
+                alert(`❌ Lỗi khi cập nhật: ${error.message}\n\nVui lòng thử lại!`);
+            }
         }
 
         // Cập nhật lưới các số
         function updateNumbersGrid() {
             const grid = document.getElementById('numbersGrid');
             grid.innerHTML = '';
-            
-            for (let i = 1; i <= 10; i++) {
+
+            for (let i = 1; i <= window.maxNumber; i++) {
                 const box = document.createElement('div');
                 box.className = 'number-box';
                 box.textContent = i;
-                
+
                 if (window.usedNumbers.includes(i)) {
                     box.classList.add('used');
                 }
-                
+
                 grid.appendChild(box);
             }
         }
@@ -550,7 +683,7 @@
         // Cập nhật lịch sử
         function updateHistory() {
             const historyList = document.getElementById('historyList');
-            
+
             if (window.gameHistory.length === 0) {
                 historyList.innerHTML = `
                     <li style="text-align: center; color: #6c757d; padding: 20px;">
@@ -578,7 +711,7 @@
             // Kiểm tra tên người chơi
             const playerNameInput = document.getElementById('playerName');
             const playerName = playerNameInput.value.trim();
-            
+
             if (!playerName) {
                 alert('⚠️ Vui lòng nhập tên của bạn trước khi quay số!');
                 playerNameInput.focus();
@@ -590,28 +723,28 @@
             window.isSpinning = true;
             const display = document.getElementById('numberDisplay');
             const button = document.getElementById('spinButton');
-            
+
             button.disabled = true;
             display.classList.add('spinning');
 
             // Hiệu ứng quay số
             let counter = 0;
             const spinInterval = setInterval(async () => {
-                const randomIndex = Math.floor(Math.random() * 10) + 1;
+                const randomIndex = Math.floor(Math.random() * window.maxNumber) + 1;
                 display.textContent = randomIndex;
                 counter++;
 
                 if (counter >= 20) {
                     clearInterval(spinInterval);
-                    
+
                     // Chọn số ngẫu nhiên từ các số còn lại
                     const randomIndex = Math.floor(Math.random() * window.availableNumbers.length);
                     const selectedNumber = window.availableNumbers[randomIndex];
-                    
+
                     // Hiển thị số trúng
                     display.textContent = selectedNumber;
                     display.classList.remove('spinning');
-                    
+
                     // Lưu vào Firebase/LocalStorage
                     await window.saveToFirebase(selectedNumber, playerName);
 
