@@ -364,6 +364,7 @@
         window.isSpinning = false;
         window.database = database;
         window.isFirebaseReady = isFirebaseReady;
+        window.adminPassword = null; // Sẽ được tải từ Firebase
 
         // Update connection status
         function updateStatus(isOnline) {
@@ -385,6 +386,18 @@
             window.firebasePush = push;
             window.firebaseSet = set;
             window.firebaseRemove = remove;
+            
+            // Load admin password from Firebase
+            const passwordRef = ref(database, 'password');
+            onValue(passwordRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.adminPassword = data;
+                    console.log('🔒 Admin password loaded from Firebase');
+                } else {
+                    console.warn('⚠️ No password found in Firebase. Please set "password" key in database.');
+                }
+            });
             
             const historyRef = ref(database, 'gameHistory');
             onValue(historyRef, (snapshot) => {
@@ -461,6 +474,12 @@
 
         // Reset game
         window.resetGameFirebase = async function() {
+            // Kiểm tra nếu chưa load password từ Firebase
+            if (window.isFirebaseReady && !window.adminPassword) {
+                alert('⚠️ Đang tải cấu hình từ Firebase, vui lòng thử lại sau giây lát...');
+                return;
+            }
+            
             // Yêu cầu mật khẩu
             const password = prompt('🔒 Nhập mật khẩu để reset (chỉ Admin):');
             
@@ -469,7 +488,10 @@
                 return;
             }
             
-            if (password !== 'August') {
+            // Kiểm tra mật khẩu từ Firebase (hoặc fallback cho offline mode)
+            const correctPassword = window.isFirebaseReady ? window.adminPassword : 'August';
+            
+            if (password !== correctPassword) {
                 alert('❌ Mật khẩu sai! Không thể reset.');
                 return;
             }

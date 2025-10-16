@@ -46,6 +46,10 @@ const firebaseConfig = {
     "gameHistory": {
       ".read": true,
       ".write": true
+    },
+    "password": {
+      ".read": true,
+      ".write": false
     }
   }
 }
@@ -53,7 +57,20 @@ const firebaseConfig = {
 
 3. Click **Publish**
 
-⚠️ **LƯU Ý**: Rules này cho phép mọi người đọc/ghi. Để bảo mật hơn, nên thêm authentication sau.
+⚠️ **LƯU Ý**: 
+- `gameHistory`: Cho phép mọi người đọc/ghi để chơi game
+- `password`: Chỉ cho phép đọc, không cho phép ghi từ client (bảo vệ mật khẩu admin)
+
+## Bước 4.5: Thêm Mật Khẩu Admin
+
+1. Vào tab **Data** trong Realtime Database
+2. Click vào **root** (dấu + đầu tiên)
+3. Thêm key mới:
+   - **Name**: `password`
+   - **Value**: `11August` (hoặc mật khẩu bạn muốn)
+4. Click **Add**
+
+🔒 **Mật khẩu này sẽ được dùng để reset game và chỉ Admin biết!**
 
 ## Bước 5: Cập nhật Code
 
