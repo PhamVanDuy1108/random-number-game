@@ -310,19 +310,19 @@
         <div class="info-section" style="background: #fff3cd; border: 2px solid #ffc107;">
             <h3 style="color: #856404;">⚙️ Cấu hình số lượng (Admin)</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <input 
-                    type="number" 
-                    id="maxNumberInput" 
-                    class="name-input" 
+                <input
+                    type="number"
+                    id="maxNumberInput"
+                    class="name-input"
                     placeholder="Nhập số lượng (VD: 30)"
                     min="1"
                     max="1000"
                     style="flex: 1;"
                 >
-                <button 
-                    onclick="updateMaxNumber()" 
+                <button
+                    onclick="updateMaxNumber()"
                     style="padding: 15px 30px; font-size: 1.1em; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;"
-                    onmouseover="this.style.background='#218838'" 
+                    onmouseover="this.style.background='#218838'"
                     onmouseout="this.style.background='#28a745'"
                 >
                     💾 Lưu
@@ -483,11 +483,11 @@
         function initGameOffline() {
             const savedData = localStorage.getItem('gameHistory');
             const savedMaxNumber = localStorage.getItem('maxNumber');
-            
+
             if (savedMaxNumber) {
                 window.maxNumber = parseInt(savedMaxNumber);
             }
-            
+
             if (savedData) {
                 window.gameHistory = JSON.parse(savedData);
                 window.usedNumbers = window.gameHistory.map(item => item.number);
@@ -622,7 +622,7 @@
 
                 // Yêu cầu mật khẩu admin
                 const password = prompt('🔒 Nhập mật khẩu Admin để thay đổi cấu hình:');
-                
+
                 if (password === null) {
                     return; // User clicked Cancel
                 }
@@ -650,12 +650,12 @@
                 // Lưu vào Firebase
                 const maxNumberRef = window.firebaseRef(window.database, 'maxNumber');
                 await window.firebaseSet(maxNumberRef, newMaxNumber);
-                
+
                 // Clear input
                 document.getElementById('maxNumberInput').value = '';
-                
+
                 alert(`✅ Đã cập nhật thành công! Số lượng mới: ${newMaxNumber}`);
-                
+
             } catch (error) {
                 console.error('Error updating maxNumber:', error);
                 alert(`❌ Lỗi khi cập nhật: ${error.message}\n\nVui lòng thử lại!`);
