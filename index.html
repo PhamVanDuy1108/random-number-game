@@ -692,8 +692,8 @@
 
         // Cập nhật lưới các số cho cả 2 đội
         function updateAllGrids() {
-            updateSingleGrid('Cong', document.getElementById('numbersGridCong'));
-            updateSingleGrid('Thu', document.getElementById('numbersGridThu'));
+            updateSingleGrid('Công', document.getElementById('numbersGridCong'));
+            updateSingleGrid('Thủ', document.getElementById('numbersGridThu'));
         }
 
         // Cập nhật một lưới số cụ thể
@@ -809,8 +809,8 @@
 
         // Kiểm tra game over và cập nhật trạng thái nút
         function checkGameOver() {
-            const availableCong = window.maxNumber - window.gameState.Cong.used.length;
-            const availableThu = window.maxNumber - window.gameState.Thu.used.length;
+            const availableCong = window.maxNumber - window.gameState['Công'].used.length;
+            const availableThu = window.maxNumber - window.gameState['Thủ'].used.length;
 
             const buttonCong = document.getElementById('spinButtonCong');
             const buttonThu = document.getElementById('spinButtonThu');
