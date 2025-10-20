@@ -435,7 +435,7 @@
             'Công': { used: [] },
             'Thủ': { used: [] }
         };
-        
+
         // Update connection status
         function updateStatus(isOnline) {
             const badge = document.getElementById('statusBadge');
@@ -488,7 +488,7 @@
             onValue(historyRef, (snapshot) => {
                 const data = snapshot.val();
                 window.gameHistory = data ? Object.values(data).sort((a, b) => b.timestamp - a.timestamp) : [];
-                
+
                 // Cập nhật trạng thái và giao diện từ lịch sử
                 updateUIFromHistory();
             });
@@ -525,7 +525,7 @@
                 window.maxNumber = parseInt(savedMaxNumber);
             }
             window.gameHistory = savedData ? JSON.parse(savedData) : [];
-            
+
             updateUIFromHistory();
             updateMaxNumberDisplay();
         }
@@ -802,7 +802,7 @@
 
                     window.isSpinning = false;
                     // Kích hoạt lại các nút sau khi quay xong
-                    checkGameOver(); 
+                    checkGameOver();
                 }
             }, 100);
         }
