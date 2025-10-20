@@ -30,6 +30,25 @@
             width: 100%;
         }
 
+        .game-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .team-section {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .team-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
         h1 {
             text-align: center;
             color: #667eea;
@@ -297,11 +316,25 @@
             >
         </div>
 
-        <div class="number-display" id="numberDisplay">?</div>
+        <div class="game-container">
+            <!-- Cột Đội Công -->
+            <div class="team-section">
+                <h2>⚔️ Đội Công</h2>
+                <div class="number-display" id="numberDisplayCong">?</div>
+                <button class="spin-button" id="spinButtonCong" onclick="spinNumber('Công')">
+                    🎲 QUAY SỐ (Công)
+                </button>
+            </div>
 
-        <button class="spin-button" id="spinButton" onclick="spinNumber()">
-            🎲 QUAY SỐ
-        </button>
+            <!-- Cột Đội Thủ -->
+            <div class="team-section">
+                <h2>🛡️ Đội Thủ</h2>
+                <div class="number-display" id="numberDisplayThu">?</div>
+                <button class="spin-button" id="spinButtonThu" onclick="spinNumber('Thủ')">
+                    🎲 QUAY SỐ (Thủ)
+                </button>
+            </div>
+        </div>
 
         <button class="reset-button" onclick="resetGame()">
             🔄 BẮT ĐẦU LẠI (Reset tất cả)
@@ -338,8 +371,13 @@
         </div>
 
         <div class="info-section">
-            <h3>📊 Các số còn lại</h3>
-            <div class="numbers-grid" id="numbersGrid"></div>
+            <h3>📊 Các số của Đội Công</h3>
+            <div class="numbers-grid" id="numbersGridCong"></div>
+        </div>
+
+        <div class="info-section">
+            <h3>📊 Các số của Đội Thủ</h3>
+            <div class="numbers-grid" id="numbersGridThu"></div>
         </div>
 
         <div class="info-section">
@@ -386,15 +424,18 @@
         }
 
         // Global variables
-        window.availableNumbers = [];
-        window.usedNumbers = [];
         window.gameHistory = [];
         window.isSpinning = false;
         window.database = database;
         window.isFirebaseReady = isFirebaseReady;
         window.adminPassword = null; // Sẽ được tải từ Firebase
         window.maxNumber = 10; // Mặc định là 10, sẽ được tải từ Firebase
-
+        // Trạng thái game cho từng đội
+        window.gameState = {
+            'Công': { used: [] },
+            'Thủ': { used: [] }
+        };
+        
         // Update connection status
         function updateStatus(isOnline) {
             const badge = document.getElementById('statusBadge');
@@ -434,49 +475,45 @@
                 const data = snapshot.val();
                 if (data && typeof data === 'number' && data > 0) {
                     window.maxNumber = data;
-                    console.log(`🎲 Max number set to: ${window.maxNumber}`);
-                    // Cập nhật lại availableNumbers khi maxNumber thay đổi
-                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
-                        .filter(n => !window.usedNumbers.includes(n));
-                    updateNumbersGrid();
-                    updateMaxNumberDisplay(); // Cập nhật hiển thị
                 } else {
                     window.maxNumber = 10; // Default
-                    console.log('ℹ️ Using default maxNumber: 10');
-                    updateMaxNumberDisplay(); // Cập nhật hiển thị
                 }
+                console.log(`🎲 Max number set to: ${window.maxNumber}`);
+                updateMaxNumberDisplay();
+                // Phải gọi updateUI sau khi có maxNumber và history
+                updateUIFromHistory();
             });
 
             const historyRef = ref(database, 'gameHistory');
             onValue(historyRef, (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    window.gameHistory = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
-                    window.usedNumbers = window.gameHistory.map(item => item.number);
-                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
-                        .filter(n => !window.usedNumbers.includes(n));
-                } else {
-                    window.gameHistory = [];
-                    window.usedNumbers = [];
-                    window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1);
-                }
-                updateNumbersGrid();
-                updateHistory();
-
-                // Check game over
-                if (window.availableNumbers.length === 0) {
-                    document.getElementById('gameOverMessage').style.display = 'block';
-                    document.getElementById('spinButton').disabled = true;
-                } else {
-                    document.getElementById('gameOverMessage').style.display = 'none';
-                    if (!window.isSpinning) {
-                        document.getElementById('spinButton').disabled = false;
-                    }
-                }
+                window.gameHistory = data ? Object.values(data).sort((a, b) => b.timestamp - a.timestamp) : [];
+                
+                // Cập nhật trạng thái và giao diện từ lịch sử
+                updateUIFromHistory();
             });
         } else {
             // Offline mode - use localStorage
             initGameOffline();
+        }
+
+        function updateUIFromHistory() {
+            // Reset trạng thái
+            window.gameState['Công'].used = [];
+            window.gameState['Thủ'].used = [];
+
+            // Xây dựng lại trạng thái từ lịch sử
+            for (const item of window.gameHistory) {
+                if (item.team === 'Công') {
+                    window.gameState['Công'].used.push(item.number);
+                } else if (item.team === 'Thủ') {
+                    window.gameState['Thủ'].used.push(item.number);
+                }
+            }
+
+            updateAllGrids();
+            updateHistory();
+            checkGameOver();
         }
 
         // Initialize offline mode
@@ -487,45 +524,34 @@
             if (savedMaxNumber) {
                 window.maxNumber = parseInt(savedMaxNumber);
             }
-
-            if (savedData) {
-                window.gameHistory = JSON.parse(savedData);
-                window.usedNumbers = window.gameHistory.map(item => item.number);
-                window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1)
-                    .filter(n => !window.usedNumbers.includes(n));
-            } else {
-                window.availableNumbers = Array.from({length: window.maxNumber}, (_, i) => i + 1);
-                window.usedNumbers = [];
-                window.gameHistory = [];
-            }
-            updateNumbersGrid();
-            updateHistory();
+            window.gameHistory = savedData ? JSON.parse(savedData) : [];
+            
+            updateUIFromHistory();
+            updateMaxNumberDisplay();
         }
         window.initGameOffline = initGameOffline;
 
         // Save to Firebase
-        window.saveToFirebase = async function(number, playerName) {
+        window.saveToFirebase = async function(number, playerName, team) {
+            const newEntry = {
+                number: number,
+                playerName: playerName,
+                team: team,
+                timestamp: Date.now(),
+                time: new Date().toLocaleString('vi-VN')
+            };
+
             if (!window.isFirebaseReady) {
                 // Offline mode - save to localStorage
-                const newEntry = {
-                    number: number,
-                    playerName: playerName,
-                    timestamp: Date.now(),
-                    time: new Date().toLocaleString('vi-VN')
-                };
                 window.gameHistory.unshift(newEntry);
                 localStorage.setItem('gameHistory', JSON.stringify(window.gameHistory));
+                updateUIFromHistory(); // Cập nhật UI ngay lập tức
                 return;
             }
 
             const historyRef = window.firebaseRef(window.database, 'gameHistory');
             const newHistoryRef = window.firebasePush(historyRef);
-            await window.firebaseSet(newHistoryRef, {
-                number: number,
-                playerName: playerName,
-                timestamp: Date.now(),
-                time: new Date().toLocaleString('vi-VN')
-            });
+            await window.firebaseSet(newHistoryRef, newEntry);
         };
 
         // Reset game
@@ -565,7 +591,8 @@
                 window.initGameOffline();
             }
 
-            document.getElementById('numberDisplay').textContent = '?';
+            document.getElementById('numberDisplayCong').textContent = '?';
+            document.getElementById('numberDisplayThu').textContent = '?';
             alert('✅ Đã reset thành công!');
         };
 
@@ -582,7 +609,8 @@
             if (!window.isFirebaseReady) {
                 window.initGameOffline();
             }
-            document.getElementById('numberDisplay').textContent = '?';
+            document.getElementById('numberDisplayCong').textContent = '?';
+            document.getElementById('numberDisplayThu').textContent = '?';
             updateMaxNumberDisplay();
         }
 
@@ -662,21 +690,32 @@
             }
         }
 
-        // Cập nhật lưới các số
-        function updateNumbersGrid() {
-            const grid = document.getElementById('numbersGrid');
-            grid.innerHTML = '';
+        // Cập nhật lưới các số cho cả 2 đội
+        function updateAllGrids() {
+            updateSingleGrid('Cong', document.getElementById('numbersGridCong'));
+            updateSingleGrid('Thu', document.getElementById('numbersGridThu'));
+        }
+
+        // Cập nhật một lưới số cụ thể
+        function updateSingleGrid(team, gridElement) {
+            if (!gridElement) return;
+            gridElement.innerHTML = '';
+            const usedNumbers = window.gameState[team].used;
 
             for (let i = 1; i <= window.maxNumber; i++) {
                 const box = document.createElement('div');
                 box.className = 'number-box';
                 box.textContent = i;
 
-                if (window.usedNumbers.includes(i)) {
+                if (usedNumbers.includes(i)) {
                     box.classList.add('used');
+                    // Tìm người chơi đã quay số này
+                    const historyEntry = window.gameHistory.find(h => h.team === team && h.number === i);
+                    if (historyEntry) {
+                        box.title = `Đã quay bởi: ${historyEntry.playerName}`;
+                    }
                 }
-
-                grid.appendChild(box);
+                gridElement.appendChild(box);
             }
         }
 
@@ -694,10 +733,10 @@
             }
 
             historyList.innerHTML = window.gameHistory.map((item, index) => `
-                <li class="history-item">
+                <li class="history-item" style="border-left-color: ${item.team === 'Công' ? '#dc3545' : '#007bff'};">
                     <span>
-                        <span class="history-number">#${item.number}</span>
-                        <span class="history-name">👤 ${item.playerName || 'Ẩn danh'}</span>
+                        <span class="history-number" style="color: ${item.team === 'Công' ? '#dc3545' : '#007bff'};">#${item.number}</span>
+                        <span class="history-name">👤 ${item.playerName || 'Ẩn danh'} (${item.team})</span>
                     </span>
                     <span class="history-time">
                         ${item.time || 'N/A'}
@@ -707,7 +746,11 @@
         }
 
         // Quay số
-        async function spinNumber() {
+        async function spinNumber(team) {
+            const teamState = window.gameState[team];
+            const availableNumbers = Array.from({ length: window.maxNumber }, (_, i) => i + 1)
+                                          .filter(n => !teamState.used.includes(n));
+
             // Kiểm tra tên người chơi
             const playerNameInput = document.getElementById('playerName');
             const playerName = playerNameInput.value.trim();
@@ -718,42 +761,68 @@
                 return;
             }
 
-            if (window.isSpinning || window.availableNumbers.length === 0) return;
+            if (window.isSpinning || availableNumbers.length === 0) {
+                alert(`🎉 Đội ${team} đã quay hết số!`);
+                return;
+            }
 
             window.isSpinning = true;
-            const display = document.getElementById('numberDisplay');
-            const button = document.getElementById('spinButton');
+            const display = team === 'Công' ? document.getElementById('numberDisplayCong') : document.getElementById('numberDisplayThu');
+            const buttonCong = document.getElementById('spinButtonCong');
+            const buttonThu = document.getElementById('spinButtonThu');
 
-            button.disabled = true;
+            buttonCong.disabled = true;
+            buttonThu.disabled = true;
             display.classList.add('spinning');
 
             // Hiệu ứng quay số
             let counter = 0;
             const spinInterval = setInterval(async () => {
-                const randomIndex = Math.floor(Math.random() * window.maxNumber) + 1;
-                display.textContent = randomIndex;
+                // Hiển thị số ngẫu nhiên trong toàn bộ dải số để tạo hiệu ứng
+                const randomEffectNumber = Math.floor(Math.random() * window.maxNumber) + 1;
+                display.textContent = randomEffectNumber;
                 counter++;
 
                 if (counter >= 20) {
                     clearInterval(spinInterval);
 
-                    // Chọn số ngẫu nhiên từ các số còn lại
-                    const randomIndex = Math.floor(Math.random() * window.availableNumbers.length);
-                    const selectedNumber = window.availableNumbers[randomIndex];
+                    // Chọn số ngẫu nhiên từ các số CÒN LẠI của đội đó
+                    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                    const selectedNumber = availableNumbers[randomIndex];
 
                     // Hiển thị số trúng
                     display.textContent = selectedNumber;
                     display.classList.remove('spinning');
 
                     // Lưu vào Firebase/LocalStorage
-                    await window.saveToFirebase(selectedNumber, playerName);
+                    await window.saveToFirebase(selectedNumber, playerName, team);
 
                     // Clear input
                     playerNameInput.value = '';
 
                     window.isSpinning = false;
+                    // Kích hoạt lại các nút sau khi quay xong
+                    checkGameOver(); 
                 }
             }, 100);
+        }
+
+        // Kiểm tra game over và cập nhật trạng thái nút
+        function checkGameOver() {
+            const availableCong = window.maxNumber - window.gameState.Cong.used.length;
+            const availableThu = window.maxNumber - window.gameState.Thu.used.length;
+
+            const buttonCong = document.getElementById('spinButtonCong');
+            const buttonThu = document.getElementById('spinButtonThu');
+
+            buttonCong.disabled = window.isSpinning || availableCong === 0;
+            buttonThu.disabled = window.isSpinning || availableThu === 0;
+
+            if (availableCong === 0 && availableThu === 0) {
+                document.getElementById('gameOverMessage').style.display = 'block';
+            } else {
+                document.getElementById('gameOverMessage').style.display = 'none';
+            }
         }
 
         // Reset game
