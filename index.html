@@ -321,8 +321,8 @@
             <div class="team-section">
                 <h2>⚔️ LEVEL A+ [GÀ CHIẾN]	</h2>
                 <div class="number-display" id="numberDisplayCong">?</div>
-                <button class="spin-button" id="spinButtonCong" onclick="spinNumber('Công')">
-                    🎲 QUAY SỐ (Công)
+                <button class="spin-button" id="spinButtonCong" onclick="spinNumber('Gà Chiến')">
+                    🎲 QUAY SỐ (Gà Chiến)
                 </button>
             </div>
 
@@ -330,8 +330,8 @@
             <div class="team-section">
                 <h2>🛡️ LEVEL A [GÀ GÁY]	</h2>
                 <div class="number-display" id="numberDisplayThu">?</div>
-                <button class="spin-button" id="spinButtonThu" onclick="spinNumber('Thủ')">
-                    🎲 QUAY SỐ (Thủ)
+                <button class="spin-button" id="spinButtonThu" onclick="spinNumber('Gà Gáy')">
+                    🎲 QUAY SỐ (Gà Gáy)
                 </button>
             </div>
         </div>
@@ -441,8 +441,8 @@
         window.maxNumber = 10; // Mặc định là 10, sẽ được tải từ Firebase
         // Trạng thái game cho từng đội
         window.gameState = {
-            'Công': { used: [] },
-            'Thủ': { used: [] }
+            'Gà Chiến': { used: [] },
+            'Gà Gáy': { used: [] }
         };
 
         // Update connection status
@@ -508,15 +508,15 @@
 
         function updateUIFromHistory() {
             // Reset trạng thái
-            window.gameState['Công'].used = [];
-            window.gameState['Thủ'].used = [];
+            window.gameState['Gà Chiến'].used = [];
+            window.gameState['Gà Gáy'].used = [];
 
             // Xây dựng lại trạng thái từ lịch sử
             for (const item of window.gameHistory) {
-                if (item.team === 'Công') {
-                    window.gameState['Công'].used.push(item.number);
-                } else if (item.team === 'Thủ') {
-                    window.gameState['Thủ'].used.push(item.number);
+                if (item.team === 'Gà Chiến') {
+                    window.gameState['Gà Chiến'].used.push(item.number);
+                } else if (item.team === 'Gà Gáy') {
+                    window.gameState['Gà Gáy'].used.push(item.number);
                 }
             }
 
@@ -702,8 +702,8 @@
 
         // Cập nhật lưới các số cho cả 2 đội
         function updateAllGrids() {
-            updateSingleGrid('Công', document.getElementById('numbersGridCong'));
-            updateSingleGrid('Thủ', document.getElementById('numbersGridThu'));
+            updateSingleGrid('Gà Chiến', document.getElementById('numbersGridCong'));
+            updateSingleGrid('Gà Gáy', document.getElementById('numbersGridThu'));
         }
 
         // Cập nhật một lưới số cụ thể
@@ -743,9 +743,9 @@
             }
 
             historyList.innerHTML = window.gameHistory.map((item, index) => `
-                <li class="history-item" style="border-left-color: ${item.team === 'Công' ? '#dc3545' : '#007bff'};">
+                <li class="history-item" style="border-left-color: ${item.team === 'Gà Chiến' ? '#dc3545' : '#007bff'};">
                     <span>
-                        <span class="history-number" style="color: ${item.team === 'Công' ? '#dc3545' : '#007bff'};">#${item.number}</span>
+                        <span class="history-number" style="color: ${item.team === 'Gà Chiến' ? '#dc3545' : '#007bff'};">#${item.number}</span>
                         <span class="history-name">👤 ${item.playerName || 'Ẩn danh'} (${item.team})</span>
                     </span>
                     <span class="history-time">
@@ -765,9 +765,9 @@
 
             // Phân loại các số theo đội và người chơi
             window.gameHistory.forEach(item => {
-                if (item.team === 'Công') {
+                if (item.team === 'Gà Chiến') {
                     congNumbers[item.number] = item.playerName;
-                } else if (item.team === 'Thủ') {
+                } else if (item.team === 'Gà Gáy') {
                     thuNumbers[item.number] = item.playerName;
                 }
             });
@@ -839,7 +839,7 @@
             }
 
             window.isSpinning = true;
-            const display = team === 'Công' ? document.getElementById('numberDisplayCong') : document.getElementById('numberDisplayThu');
+            const display = team === 'Gà Chiến' ? document.getElementById('numberDisplayCong') : document.getElementById('numberDisplayThu');
             const buttonCong = document.getElementById('spinButtonCong');
             const buttonThu = document.getElementById('spinButtonThu');
 
@@ -881,8 +881,8 @@
 
         // Kiểm tra game over và cập nhật trạng thái nút
         function checkGameOver() {
-            const availableCong = window.maxNumber - window.gameState['Công'].used.length;
-            const availableThu = window.maxNumber - window.gameState['Thủ'].used.length;
+            const availableCong = window.maxNumber - window.gameState['Gà Chiến'].used.length;
+            const availableThu = window.maxNumber - window.gameState['Gà Gáy'].used.length;
 
             const buttonCong = document.getElementById('spinButtonCong');
             const buttonThu = document.getElementById('spinButtonThu');
