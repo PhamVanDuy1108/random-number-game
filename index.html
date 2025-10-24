@@ -758,11 +758,11 @@
         // Cập nhật danh sách các đội đã ghép cặp
         function updateTeamPairs() {
             const teamPairsList = document.getElementById('teamPairsList');
-            
+
             // Tạo object để lưu các số đã được quay bởi từng đội
             const congNumbers = {};
             const thuNumbers = {};
-            
+
             // Phân loại các số theo đội và người chơi
             window.gameHistory.forEach(item => {
                 if (item.team === 'Công') {
@@ -771,7 +771,7 @@
                     thuNumbers[item.number] = item.playerName;
                 }
             });
-            
+
             // Tìm các số đã được cả hai đội quay
             const pairedNumbers = [];
             for (const num in congNumbers) {
@@ -783,10 +783,10 @@
                     });
                 }
             }
-            
+
             // Sắp xếp theo số tăng dần
             pairedNumbers.sort((a, b) => a.number - b.number);
-            
+
             // Hiển thị danh sách các đội
             if (pairedNumbers.length === 0) {
                 teamPairsList.innerHTML = `
