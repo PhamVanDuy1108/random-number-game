@@ -370,6 +370,15 @@
             🎉 Tất cả các số đã được quay! Nhấn "Bắt đầu lại" để chơi tiếp.
         </div>
 
+        <div class="info-section" style="background: #e7f3ff; border: 2px solid #2196F3;">
+            <h3 style="color: #1976D2;">👥 Danh sách các đội đã ghép cặp</h3>
+            <div id="teamPairsList" style="font-size: 1.1em;">
+                <p style="text-align: center; color: #6c757d; padding: 20px;">
+                    Chưa có đội nào được ghép cặp
+                </p>
+            </div>
+        </div>
+
         <div class="info-section">
             <h3>📊 Các số của Gà Chiến</h3>
             <div class="numbers-grid" id="numbersGridCong"></div>
@@ -514,6 +523,7 @@
             updateAllGrids();
             updateHistory();
             checkGameOver();
+            updateTeamPairs(); // Cập nhật danh sách các đội ghép cặp
         }
 
         // Initialize offline mode
@@ -743,6 +753,68 @@
                     </span>
                 </li>
             `).join('');
+        }
+
+        // Cập nhật danh sách các đội đã ghép cặp
+        function updateTeamPairs() {
+            const teamPairsList = document.getElementById('teamPairsList');
+            
+            // Tạo object để lưu các số đã được quay bởi từng đội
+            const congNumbers = {};
+            const thuNumbers = {};
+            
+            // Phân loại các số theo đội và người chơi
+            window.gameHistory.forEach(item => {
+                if (item.team === 'Công') {
+                    congNumbers[item.number] = item.playerName;
+                } else if (item.team === 'Thủ') {
+                    thuNumbers[item.number] = item.playerName;
+                }
+            });
+            
+            // Tìm các số đã được cả hai đội quay
+            const pairedNumbers = [];
+            for (const num in congNumbers) {
+                if (thuNumbers[num]) {
+                    pairedNumbers.push({
+                        number: parseInt(num),
+                        congPlayer: congNumbers[num],
+                        thuPlayer: thuNumbers[num]
+                    });
+                }
+            }
+            
+            // Sắp xếp theo số tăng dần
+            pairedNumbers.sort((a, b) => a.number - b.number);
+            
+            // Hiển thị danh sách các đội
+            if (pairedNumbers.length === 0) {
+                teamPairsList.innerHTML = `
+                    <p style="text-align: center; color: #6c757d; padding: 20px;">
+                        Chưa có đội nào được ghép cặp
+                    </p>
+                `;
+            } else {
+                teamPairsList.innerHTML = pairedNumbers.map((pair, index) => `
+                    <div style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; border-left: 5px solid #2196F3;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <strong style="font-size: 1.3em; color: #2196F3;">🏆 Đội ${pair.number}</strong>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="background: #ffebee; padding: 10px; border-radius: 8px; border-left: 3px solid #dc3545;">
+                                <div style="font-weight: bold; color: #dc3545; margin-bottom: 5px;">⚔️ Gà Chiến</div>
+                                <div style="color: #333;">👤 ${pair.congPlayer || 'Ẩn danh'}</div>
+                            </div>
+                            <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; border-left: 3px solid #007bff;">
+                                <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;">🛡️ Gà Gáy</div>
+                                <div style="color: #333;">👤 ${pair.thuPlayer || 'Ẩn danh'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
         // Quay số
